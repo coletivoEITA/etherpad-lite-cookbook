@@ -1,0 +1,21 @@
+# Based on https://github.com/ether/etherpad-lite/wiki/How-to-put-Etherpad-Lite-behind-a-reverse-Proxy
+
+<VirtualHost *:80>
+  ServerName <%= @params[:server_name] %>
+
+  RewriteEngine On
+  ProxyPreserveHost On
+
+  ProxyVia On
+  ProxyRequests Off
+  ProxyPass / http://<%= "#{@params[:proxy_ip]}:#{@params[:proxy_port]}/" %>
+  ProxyPassReverse / http://<%= "#{@params[:proxy_ip]}:#{@params[:proxy_port]}/" %>
+  ProxyPreserveHost on
+  <Proxy *>
+    Options FollowSymLinks MultiViews
+    AllowOverride All
+    Order allow,deny
+    allow from all
+  </Proxy>
+</VirtualHost>
+

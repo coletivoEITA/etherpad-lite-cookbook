@@ -31,8 +31,6 @@ packages.each do |p|
 end
 
 node.set['nodejs']['install_method'] = 'package'
-include_recipe "nodejs"
-
 
 user = node['etherpad-lite']['service_user']
 group = node['etherpad-lite']['service_user_gid']
@@ -57,11 +55,14 @@ template "#{project_path}/settings.json" do
     :ssl_enabled => node['etherpad-lite']['ssl_enabled'],
     :ssl_key_path => node['etherpad-lite']['ssl_key_path'],
     :ssl_cert_path => node['etherpad-lite']['ssl_cert_path'],
+
     :db_type => node['etherpad-lite']['db_type'],
-    :db_user => node['etherpad-lite']['db_user'],
     :db_host => node['etherpad-lite']['db_host'],
+    :db_port => node['etherpad-lite']['db_port'],
+    :db_user => node['etherpad-lite']['db_user'],
     :db_password => node['etherpad-lite']['db_password'],
     :db_name => node['etherpad-lite']['db_name'],
+
     :default_text => node['etherpad-lite']['default_text'],
     :require_session => node['etherpad-lite']['require_session'],
     :edit_only => node['etherpad-lite']['edit_only'],
@@ -70,8 +71,10 @@ template "#{project_path}/settings.json" do
     :abiword_path => node['etherpad-lite']['abiword_path'],
     :require_authentication => node['etherpad-lite']['require_authentication'],
     :require_authorization => node['etherpad-lite']['require_authorization'],
+
     :admin_enabled => node['etherpad-lite']['admin_enabled'],
     :admin_password => node['etherpad-lite']['admin_password'],
+
     :log_level => node['etherpad-lite']['log_level']
   })
 end
@@ -90,8 +93,7 @@ end
 
 node_modules = project_path + "/node_modules"
 
-
-# Make Nginx log dirs
+# Make log dirs
 log_dir = node['etherpad-lite']['logs_dir']
 access_log = log_dir + '/access.log'
 error_log = log_dir + '/error.log'
@@ -109,8 +111,9 @@ template "/etc/init/" + node['etherpad-lite']['service_name'] + ".conf" do
     })
 end
 
-# Nginx config file
-template node['nginx']['dir'] + "/sites-enabled/etherpad.conf" do
+if node['etherpad-lite']['proxy_server'] == 'ngnix'
+  # Nginx config file
+  template node['nginx']['dir'] + "/sites-enabled/etherpad.conf" do
     source "nginx.conf.erb"
     owner node['nginx']['user']
     group node['nginx']['group']
@@ -124,6 +127,15 @@ template node['nginx']['dir'] + "/sites-enabled/etherpad.conf" do
     })
     notifies :restart, "service[nginx]"
     action :create
+  end
+elsif node['etherpad-lite']['proxy_server'] == 'apache'
+  web_app node['etherpad-lite']['service_name'] do
+    enable true
+
+    server_name node['etherpad-lite']['domain']
+    proxy_ip node['etherpad-lite']['ip_address']
+    proxy_port node['etherpad-lite']['port_number']
+  end
 end
 
 directory log_dir do
@@ -134,14 +146,14 @@ directory log_dir do
 end
 
 # Make service log file
-file access_log  do
+file access_log do
   owner user
   group group
   action :create_if_missing # see actions section below
 end
 
 # Make service log file
-file error_log  do
+file error_log do
   owner user
   group group
   action :create_if_missing # see actions section below

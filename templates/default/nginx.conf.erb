@@ -1,7 +1,6 @@
 # Based on https://github.com/ether/etherpad-lite/wiki/How-to-put-Etherpad-Lite-behind-a-reverse-Proxy
 
 server {
-    listen       <%= @ssl_enabled ? 443 : 80 %>;
     server_name  <%= @domain %>;
 
     access_log  <%= @access_log %>;
