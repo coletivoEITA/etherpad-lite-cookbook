@@ -49,9 +49,12 @@ template "#{project_path}/settings.json" do
   variables({
     :title => node['etherpad-lite']['title'],
     :favicon_url => node['etherpad-lite']['favicon_url'],
+    :default_text => node['etherpad-lite']['default_text'],
+
     :ip_address => node['etherpad-lite']['ip_address'],
     :port_number => node['etherpad-lite']['port_number'],
     :session_key => node['etherpad-lite']['session_key'],
+
     :ssl_enabled => node['etherpad-lite']['ssl_enabled'],
     :ssl_key_path => node['etherpad-lite']['ssl_key_path'],
     :ssl_cert_path => node['etherpad-lite']['ssl_cert_path'],
@@ -63,19 +66,21 @@ template "#{project_path}/settings.json" do
     :db_password => node['etherpad-lite']['db_password'],
     :db_name => node['etherpad-lite']['db_name'],
 
-    :default_text => node['etherpad-lite']['default_text'],
     :require_session => node['etherpad-lite']['require_session'],
-    :edit_only => node['etherpad-lite']['edit_only'],
-    :minify => node['etherpad-lite']['minify'],
-    :max_age => node['etherpad-lite']['max_age'],
-    :abiword_path => node['etherpad-lite']['abiword_path'],
     :require_authentication => node['etherpad-lite']['require_authentication'],
     :require_authorization => node['etherpad-lite']['require_authorization'],
+    :edit_only => node['etherpad-lite']['edit_only'],
+
+    :abiword_path => node['etherpad-lite']['abiword_path'],
+
+    :minify => node['etherpad-lite']['minify'],
+    :max_age => node['etherpad-lite']['max_age'],
+    :socketTransportProtocols => node['etherpad-lite']['socketTransportProtocols'],
 
     :admin_enabled => node['etherpad-lite']['admin_enabled'],
     :admin_password => node['etherpad-lite']['admin_password'],
 
-    :log_level => node['etherpad-lite']['log_level']
+    :log_level => node['etherpad-lite']['log_level'],
   })
 end
 
@@ -95,25 +100,25 @@ node_modules = project_path + "/node_modules"
 
 # Make log dirs
 log_dir = node['etherpad-lite']['logs_dir']
-access_log = log_dir + '/access.log'
-error_log = log_dir + '/error.log'
+log_file = "#{log_dir}/etherpad.log"
+access_log = "#{log_dir}/access.log"
+error_log = "#{log_dir}/error.log"
 
 # Upstart service config file
-template "/etc/init/" + node['etherpad-lite']['service_name'] + ".conf" do
+template "/etc/init/#{node['etherpad-lite']['service_name']}.conf" do
     source "upstart.conf.erb"
     owner user
     group group
     variables({
       :etherpad_installation_dir => project_path,
       :etherpad_service_user => user,
-      :etherpad_access_log => access_log,
-      :etherpad_error_log => error_log,
+      :etherpad_log => log_file,
     })
 end
 
-if node['etherpad-lite']['proxy_server'] == 'ngnix'
+if node['etherpad-lite']['proxy_server'] == 'nginx'
   # Nginx config file
-  template node['nginx']['dir'] + "/sites-enabled/etherpad.conf" do
+  template "#{node['nginx']['dir']}/sites-enabled/#{node['etherpad-lite']['service_name']}" do
     source "nginx.conf.erb"
     owner node['nginx']['user']
     group node['nginx']['group']

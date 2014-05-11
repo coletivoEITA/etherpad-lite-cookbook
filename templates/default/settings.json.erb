@@ -5,91 +5,94 @@
 */
 {
   // Name your instance!
-  "title": "<%= @title %>",
+  "title": <%= @title.to_json %>,
 
   // favicon default name
   // alternatively, set up a fully specified Url to your own favicon
-  "favicon": "<%= @favicon_url %>",
-  
+  "favicon": <%= @favicon_url.to_json %>,
+
   //IP and port which etherpad should bind at
-  "ip": "<%= @ip_address %>",
-  "port" : <%= @port_number %>,
+  "ip": <%= @ip_address.to_json %>,
+  "port" : <%= @port_number.to_json %>,
 
   // Session Key, used for reconnecting user sessions
   // Set this to a secure string at least 10 characters long.  Do not share this value.
-  "sessionKey" : "<%= @session_key %>",
+  "sessionKey" : <%= @session_key.to_json %>,
 
-  <% if :ssl_enabled == true -%>
+  <% if @ssl_enabled == true -%>
   // Node native SSL support
   // this is disabled by default
   //
   // make sure to have the minimum and correct file access permissions set
   // so that the Etherpad server can access them
   "ssl" : {
-            "key" : "<%= @ssl_key_path %>",
-            "cert" : "<%= @ssl_cert_path %>"
+            "key" : <%= @ssl_key_path.to_json %>,
+            "cert" : <%= @ssl_cert_path.to_json %>
           },
 
   <% end -%>
 
   //The Type of the database. You can choose between dirty, postgres, sqlite and mysql
   //You shouldn't use "dirty" for for anything else than testing or development
-  "dbType" : "<%= @db_type %>",
+  "dbType" : <%= @db_type.to_json %>,
   //the database specific settings
    "dbSettings" : {
-                    "user" : "<%= @db_user %>",
-                    "host" : "<%= @db_host %>",
-                    "password": "<%= @db_password %>",
-                    "database": "<%= @db_name %>"
+                    "user" : <%= @db_user.to_json %>,
+                    "password": <%= @db_password.to_json %>,
+                    "host" : <%= @db_host.to_json %>,
+                    "port" : <%= @db_port.to_json %>,
+                    "database": <%= @db_name.to_json %>
                   },
-  
+
   //Logging configuration. See log4js documentation for further information
   // https://github.com/nomiddlename/log4js-node
   "logconfig" :
 { "appenders": [
 { "type": "console" }
 ] },
-  
+
   //the default text of a pad
-  "defaultPadText" : "<%= @default_text %>",
-  
+  "defaultPadText" : <%= @default_text.to_json %>,
+
   /* Users must have a session to access pads. This effectively allows only group pads to be accessed. */
-  "requireSession" : <%= @require_session %>,
+  "requireSession" : <%= @require_session.to_json %>,
 
   /* Users may edit pads but not create new ones. Pad creation is only via the API. This applies both to group pads and regular pads. */
-  "editOnly" : <%= @edit_only %>,
-  
+  "editOnly" : <%= @edit_only.to_json %>,
+
   /* if true, all css & js will be minified before sending to the client. This will improve the loading performance massivly,
      but makes it impossible to debug the javascript/css */
-  "minify" : <%= @minify %>,
+  "minify" : <%= @minify.to_json %>,
 
   /* How long may clients use served javascript code (in seconds)? Without versioning this
      may cause problems during deployment. Set to 0 to disable caching */
-  "maxAge" : <%= @max_age %>, // 60 * 60 * 6 = 6 hours
-  
+  "maxAge" : <%= @max_age.to_json %>, // 60 * 60 * 6 = 6 hours
+
   /* This is the path to the Abiword executable. Setting it to null, disables abiword.
      Abiword is needed to advanced import/export features of pads*/
-  "abiword" : "<%= @abiword_path %>",
- 
+  "abiword" : <%= @abiword_path.to_json %>,
+
   /* This setting is used if you require authentication of all users.
      Note: /admin always requires authentication. */
-  "requireAuthentication": <%= @require_authentication %>,
+  "requireAuthentication": <%= @require_authentication.to_json %>,
 
   /* Require authorization by a module, or a user with is_admin set, see below. */
-  "requireAuthorization": <%= @require_authorization %>,
+  "requireAuthorization": <%= @require_authorization.to_json %>,
 
   /* Users for basic authentication. is_admin = true gives access to /admin.
      If you do not uncomment this, /admin will not be available! */
-  "users": {
-    "admin": {
-      "password": "<%= @admin_password %>",
-      "is_admin": true
-    }
-  },
+  <% if @admin_enabled %>
+    "users": {
+      "admin": {
+        "password": <%= @admin_password.to_json %>,
+        "is_admin": true
+      }
+    },
+  <% end %>
 
   /* The log level we are using, can be: DEBUG, INFO, WARN, ERROR */
-  "loglevel": "<%= @log_level %>",
+  "loglevel": <%= @log_level.to_json %>,
 
   // restrict socket.io transport methods
-  "socketTransportProtocols" : ["xhr-polling", "jsonp-polling", "htmlfile"]
+  "socketTransportProtocols" : <%= @socketTransportProtocols.to_json %>,
 }
