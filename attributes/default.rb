@@ -35,16 +35,16 @@ default['etherpad-lite']['db_name'] = "etherpad"
 default['etherpad-lite']['admin_enabled'] = false
 default['etherpad-lite']['admin_password'] = ""
 
-default['etherpad-lite']['require_session'] = "false"
-default['etherpad-lite']['require_authentication'] = "false"
-default['etherpad-lite']['require_authorization'] = "false"
-default['etherpad-lite']['edit_only'] =  "false"
+default['etherpad-lite']['require_session'] = false
+default['etherpad-lite']['require_authentication'] = false
+default['etherpad-lite']['require_authorization'] = false
+default['etherpad-lite']['edit_only'] =  false
 
 default['etherpad-lite']['abiword_path'] = "/usr/bin/abiword"
 
-default['etherpad-lite']['minify'] = "true"
+default['etherpad-lite']['minify'] = true
 default['etherpad-lite']['max_age'] = 21600 # // 60 * 60 * 6 = 6 hours
-default['etherpad-lite']['socketTransportProtocols'] = ["websocket", "xhr-polling", "jsonp-polling", "htmlfile"],
+default['etherpad-lite']['socketTransportProtocols'] = ["websocket", "xhr-polling", "jsonp-polling", "htmlfile"]
 
 default['etherpad-lite']['service_user'] = 'etherpad'
 default['etherpad-lite']['service_user_gid'] = node['etherpad-lite']['service_user']
