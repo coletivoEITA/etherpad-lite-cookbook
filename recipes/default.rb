@@ -105,19 +105,23 @@ access_log = "#{log_dir}/access.log"
 error_log = "#{log_dir}/error.log"
 
 # Upstart service config file
+service node['etherpad-lite']['service_name'] do
+  provider Chef::Provider::Service::Upstart
+  action :enable
+end
 template "/etc/init/#{node['etherpad-lite']['service_name']}.conf" do
-    source "upstart.conf.erb"
-    owner user
-    group group
-    variables({
-      :etherpad_installation_dir => project_path,
-      :etherpad_service_user => user,
-      :etherpad_log => log_file,
-    })
+  source "upstart.conf.erb"
+  owner user
+  group group
+  variables({
+    :etherpad_installation_dir => project_path,
+    :etherpad_service_user => user,
+    :etherpad_log => log_file,
+  })
+  notifies :restart, "service[#{node['etherpad-lite']['service_name']}]"
 end
 
 if node['etherpad-lite']['proxy_server'] == 'nginx'
-  # Nginx config file
   template "#{node['nginx']['dir']}/sites-enabled/#{node['etherpad-lite']['service_name']}" do
     source "nginx.conf.erb"
     owner node['nginx']['user']
@@ -130,7 +134,7 @@ if node['etherpad-lite']['proxy_server'] == 'nginx'
       :access_log => access_log,
       :error_log => error_log,
     })
-    notifies :restart, "service[nginx]"
+    notifies :reload, "service[nginx]"
     action :create
   end
 elsif node['etherpad-lite']['proxy_server'] == 'apache'
@@ -141,6 +145,7 @@ elsif node['etherpad-lite']['proxy_server'] == 'apache'
     proxy_ip node['etherpad-lite']['ip_address']
     proxy_port node['etherpad-lite']['port_number']
   end
+  notifies :reload, "service[apache2]"
 end
 
 directory log_dir do
@@ -199,8 +204,3 @@ unless node['etherpad-lite']['plugins'].empty?
   end
 end
 
-# Register capture app as a service
-service node['etherpad-lite']['service_name'] do
-  provider Chef::Provider::Service::Upstart
-  action :restart
-end
