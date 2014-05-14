@@ -19,10 +19,12 @@ server {
     <% end -%>
 
     location / {
-        proxy_pass             http://localhost:<%= @internal_port %>/;
-        proxy_set_header       Host $host;
-        # be carefull, this line doesn't override any proxy_buffering on set in a conf.d/file.conf
-        proxy_buffering off;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $remote_addr;
+      proxy_set_header Host $host;
+      proxy_pass http://localhost:<%= @internal_port %>/;
+      # be carefull, this line doesn't override any proxy_buffering on set in a conf.d/file.conf
+      proxy_buffering off;
     }
 }
 
