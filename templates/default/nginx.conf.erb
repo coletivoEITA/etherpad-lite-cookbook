@@ -1,6 +1,7 @@
 # Based on https://github.com/ether/etherpad-lite/wiki/How-to-put-Etherpad-Lite-behind-a-reverse-Proxy
 
 server {
+    listen <%= node[:nginx][:listen_ports].first %>;
     server_name  <%= @domain %>;
 
     access_log  <%= @access_log %>;
