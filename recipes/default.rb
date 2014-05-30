@@ -18,6 +18,18 @@
 # limitations under the License.
 #
 
+service_user = node['etherpad-lite']['service_user']
+service_group = node['etherpad-lite']['service_group']
+user_home = node['etherpad-lite']['service_user_home']
+project_path = node['etherpad-lite']['project_path']
+
+node_modules = node['etherpad-lite']['node_modules']
+log_dir = node['etherpad-lite']['logs_dir']
+log_file = "#{log_dir}/etherpad.log"
+access_log = "#{log_dir}/access.log"
+error_log = "#{log_dir}/error.log"
+
+# System deps
 case node['platform_family']
   when "debian", "ubuntu"
     packages = %w{gzip git-core curl python libssl-dev pkg-config build-essential}
@@ -25,100 +37,107 @@ case node['platform_family']
     packages = %w{gzip git-core curl python openssl-devel}
     # && yum groupinstall "Development Tools"
 end
-
+packages << 'abiword' if node['etherpad-lite']['use_abiword']
 packages.each do |p|
   package p
 end
 
-node.set['nodejs']['install_method'] = 'package'
+# User/group
+group service_group do
+  action :create
+end
+user service_user do
+  supports :manage_home => true
+  home user_home
+  gid service_group
+  action :create
+end
 
-user = node['etherpad-lite']['service_user']
-group = node['etherpad-lite']['service_user_gid']
-user_home = node['etherpad-lite']['service_user_home']
-project_path = "#{user_home}/etherpad-lite"
-
+# Code and directories
 git project_path do
+  user service_user; group service_group
   repository node['etherpad-lite']['etherpad_git_repo_url']
+  enable_submodules true
   action :sync
-  user user
 end
 
+# Log dir
+directory log_dir do
+  owner service_user; group service_group
+  recursive true
+  action :create
+end
+# Make service log file
+file access_log do
+  owner service_user; group service_group
+  action :create_if_missing
+end
+# Make service log file
+file error_log do
+  owner service_user; group service_group
+  action :create_if_missing
+end
+
+# Settings
 template "#{project_path}/settings.json" do
-  owner user
-  group group
-  variables({
-    :title => node['etherpad-lite']['title'],
-    :favicon_url => node['etherpad-lite']['favicon_url'],
-    :default_text => node['etherpad-lite']['default_text'],
-
-    :ip_address => node['etherpad-lite']['ip_address'],
-    :port_number => node['etherpad-lite']['port_number'],
-    :session_key => node['etherpad-lite']['session_key'],
-
-    :ssl_enabled => node['etherpad-lite']['ssl_enabled'],
-    :ssl_key_path => node['etherpad-lite']['ssl_key_path'],
-    :ssl_cert_path => node['etherpad-lite']['ssl_cert_path'],
-
-    :db_type => node['etherpad-lite']['db_type'],
-    :db_host => node['etherpad-lite']['db_host'],
-    :db_port => node['etherpad-lite']['db_port'],
-    :db_user => node['etherpad-lite']['db_user'],
-    :db_password => node['etherpad-lite']['db_password'],
-    :db_name => node['etherpad-lite']['db_name'],
-
-    :require_session => node['etherpad-lite']['require_session'],
-    :require_authentication => node['etherpad-lite']['require_authentication'],
-    :require_authorization => node['etherpad-lite']['require_authorization'],
-    :edit_only => node['etherpad-lite']['edit_only'],
-
-    :abiword_path => node['etherpad-lite']['abiword_path'],
-
-    :minify => node['etherpad-lite']['minify'],
-    :max_age => node['etherpad-lite']['max_age'],
-    :socketTransportProtocols => node['etherpad-lite']['socketTransportProtocols'],
-
-    :admin_enabled => node['etherpad-lite']['admin_enabled'],
-    :admin_password => node['etherpad-lite']['admin_password'],
-
-    :log_level => node['etherpad-lite']['log_level'],
-  })
+  owner user; group group
+  variables node['etherpad-lite']
 end
 
-etherpad_api_key = node['etherpad-lite']['etherpad_api_key']
+# API KEY
+template "#{project_path}/APIKEY.txt" do
+  owner service_user; group service_group
+  variables node['etherpad-lite']
+end if not node['etherpad-lite'][:etherpad_api_key].empty?
 
-if etherpad_api_key != ''
-  template "#{project_path}/APIKEY.txt" do
-    owner user
-    group group
-    variables({
-      :etherpad_api_key => etherpad_api_key
-    })
+# Database
+if Chef::Config[:solo]
+  if node['etherpad-lite'][:db_password].nil?
+    Chef::Application.fatal! "The db password is necessary when using Chef::Solo"
   end
+else
+  node.set_unless['etherpad-lite'][:db_password] = secure_password
+  node.save
 end
 
-node_modules = project_path + "/node_modules"
+postgresql_connection = {
+  :host => '127.0.0.1',
+  :port => node[:postgresql][:config][:port],
+  :username => 'postgres',
+  :password => node[:postgresql][:password][:postgres],
+}
 
-# Make log dirs
-log_dir = node['etherpad-lite']['logs_dir']
-log_file = "#{log_dir}/etherpad.log"
-access_log = "#{log_dir}/access.log"
-error_log = "#{log_dir}/error.log"
+postgresql_database_user node['etherpad-lite'][:db_user] do
+  connection postgresql_connection
+  password node['etherpad-lite'][:db_password]
+  action :create
+end
+postgresql_database node['etherpad-lite'][:db_name] do
+  connection postgresql_connection
+  action :create
+end
+postgresql_database_user node['etherpad-lite'][:db_user] do
+  connection postgresql_connection
+  password node['etherpad-lite'][:db_password]
+  database_name node['etherpad-lite'][:db_name]
+  action :grant
+end
 
 # Upstart service config file
+template "/etc/init/#{node['etherpad-lite']['service_name']}.conf" do
+  owner service_user; group service_group
+  source "upstart.conf.erb"
+  variables({
+    :etherpad_installation_dir => project_path,
+    :etherpad_service_user => service_user,
+    :etherpad_log => log_file,
+  })
+  action :create
+  notifies :restart, "service[#{node['etherpad-lite']['service_name']}]"
+end
 service node['etherpad-lite']['service_name'] do
   provider Chef::Provider::Service::Upstart
   action :enable
-end
-template "/etc/init/#{node['etherpad-lite']['service_name']}.conf" do
-  source "upstart.conf.erb"
-  owner user
-  group group
-  variables({
-    :etherpad_installation_dir => project_path,
-    :etherpad_service_user => user,
-    :etherpad_log => log_file,
-  })
-  notifies :restart, "service[#{node['etherpad-lite']['service_name']}]"
 end
 
 if node['etherpad-lite']['proxy_server'] == 'nginx'
@@ -148,30 +167,9 @@ elsif node['etherpad-lite']['proxy_server'] == 'apache'
   notifies :reload, "service[apache2]"
 end
 
-directory log_dir do
-  owner user
-  group group
-  recursive true
-  action :create
-end
-
-# Make service log file
-file access_log do
-  owner user
-  group group
-  action :create_if_missing # see actions section below
-end
-
-# Make service log file
-file error_log do
-  owner user
-  group group
-  action :create_if_missing # see actions section below
-end
-
 ## Install dependencies
 bash "installdeps" do
-  user 0
+  user "root"
   cwd project_path
   code <<-EOH
   ./bin/installDeps.sh >> #{error_log}
@@ -180,8 +178,7 @@ end
 
 # Create and set permissions for node_modules
 directory node_modules do
-  owner user
-  group group
+  owner service_user; group service_group
   mode "770"
   recursive true
   action :create

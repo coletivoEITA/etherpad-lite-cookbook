@@ -10,6 +10,7 @@ depends         'nodejs'
 depends         'npm'
 
 depends         'postgresql'
+depends         'database'
 
 depends         'nginx'
 depends         'apache2'

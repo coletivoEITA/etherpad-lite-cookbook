@@ -9,6 +9,17 @@
 
 # Defaults based on https://github.com/ether/etherpad-lite/blob/develop/settings.json.template
 
+default['etherpad-lite']['service_name'] = node['etherpad-lite']['service_user']
+default['etherpad-lite']['service_user'] = 'etherpad'
+default['etherpad-lite']['service_group'] = node['etherpad-lite']['service_user']
+
+default['etherpad-lite']['service_user_home'] = "/home/#{node['etherpad-lite']['service_user']}"
+default['etherpad-lite']['project_path'] = "#{node['etherpad-lite']['service_user_home']}/etherpad-lite"
+default['etherpad-lite']['node_modules'] = "#{node['etherpad-lite']['project_path']}/node_modules"
+
+default['etherpad-lite']['log_level'] = "INFO"
+default['etherpad-lite']['logs_dir'] = "#{node['etherpad-lite']['service_user_home']}/etherpad-lite/log"
+
 default['etherpad-lite']['etherpad_git_repo_url'] = 'git://github.com/ether/etherpad-lite.git'
 default['etherpad-lite']['etherpad_api_key'] = ''
 
@@ -25,6 +36,8 @@ default['etherpad-lite']['ssl_enabled'] = false
 default['etherpad-lite']['ssl_key_path'] = ""
 default['etherpad-lite']['ssl_cert_path'] = ""
 
+default['etherpad-lite']['proxy_server'] = "nginx"
+
 default['etherpad-lite']['db_type'] = "postgres"
 default['etherpad-lite']['db_user'] = "postgres"
 default['etherpad-lite']['db_host'] = "localhost"
@@ -40,21 +53,11 @@ default['etherpad-lite']['require_authentication'] = false
 default['etherpad-lite']['require_authorization'] = false
 default['etherpad-lite']['edit_only'] =  false
 
+default['etherpad-lite']['use_abiword'] = true
 default['etherpad-lite']['abiword_path'] = "/usr/bin/abiword"
 
 default['etherpad-lite']['minify'] = true
 default['etherpad-lite']['max_age'] = 21600 # // 60 * 60 * 6 = 6 hours
 default['etherpad-lite']['socketTransportProtocols'] = ["websocket", "xhr-polling", "jsonp-polling", "htmlfile"]
-
-default['etherpad-lite']['service_user'] = 'etherpad'
-default['etherpad-lite']['service_user_gid'] = node['etherpad-lite']['service_user']
-default['etherpad-lite']['service_user_home'] = "/home/#{node['etherpad-lite']['service_user']}"
-default['etherpad-lite']['service_name'] = node['etherpad-lite']['service_user']
-
-default['etherpad-lite']['log_level'] = "INFO"
-default['etherpad-lite']['logs_dir'] = "#{node['etherpad-lite']['service_user_home']}/etherpad-lite/log"
-
-default['etherpad-lite']['proxy_server'] = "nginx"
-
 
 default['etherpad-lite']['plugins'] = []
