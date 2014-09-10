@@ -32,15 +32,18 @@ error_log = "#{log_dir}/error.log"
 # System deps
 case node['platform_family']
   when "debian", "ubuntu"
-    packages = %w{gzip git-core curl python libssl-dev pkg-config build-essential}
-  when "fedora","centos","rhel"
-    packages = %w{gzip git-core curl python openssl-devel}
+    packages = %w[gzip git-core curl python libssl-dev pkg-config build-essential]
+  when "fedora", "centos", "rhel"
+    packages = %w[gzip git-core curl python openssl-devel]
     # && yum groupinstall "Development Tools"
 end
 packages << 'abiword' if node['etherpad-lite']['use_abiword']
 packages.each do |p|
   package p
 end
+
+include_recipe 'nodejs'
+nodejs_npm 'pg'
 
 # User/group
 group service_group do
@@ -137,7 +140,7 @@ template "/etc/init/#{node['etherpad-lite']['service_name']}.conf" do
 end
 service node['etherpad-lite']['service_name'] do
   provider Chef::Provider::Service::Upstart
-  action :enable
+  action [:enable, :start]
 end
 
 if node['etherpad-lite']['proxy_server'] == 'nginx'
@@ -165,23 +168,6 @@ elsif node['etherpad-lite']['proxy_server'] == 'apache'
     proxy_port node['etherpad-lite']['port_number']
   end
   notifies :reload, "service[apache2]"
-end
-
-## Install dependencies
-bash "installdeps" do
-  user "root"
-  cwd project_path
-  code <<-EOH
-  ./bin/installDeps.sh >> #{error_log}
-  EOH
-end
-
-# Create and set permissions for node_modules
-directory node_modules do
-  owner service_user; group service_group
-  mode "770"
-  recursive true
-  action :create
 end
 
 # Install plugins
