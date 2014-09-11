@@ -85,6 +85,7 @@ end
 template "#{project_path}/settings.json" do
   owner user; group group
   variables node['etherpad-lite']
+  notifies :restart, "service[#{node['etherpad-lite']['service_name']}]"
 end
 
 # API KEY
